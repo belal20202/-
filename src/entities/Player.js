@@ -88,3 +88,189 @@ class Player extends Phaser.Physics.Arcade.Sprite {
             this.setVelocityX(-this.speed);
             if (!this.isJumping) {
                 this.play('run
+class Player extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene, x, y) {
+        super(scene, x, y, 'player');
+        
+        scene.add.existing(this);
+        scene.physics.add.existing(this);
+        
+        this.setBounce(0.2);
+        this.setCollideWorldBounds(true);
+        
+        this.speed = GAME_CONFIG.PLAYER_SPEED;
+        this.jumpForce = GAME_CONFIG.PLAYER_JUMP_FORCE;
+        this.isJumping = false;
+        this.dashCooldown = 0;
+        this.currentOutfit = 'default';
+        this.coins = parseInt(localStorage.getItem('coins')) || 0;
+        this.health = 100;
+        this.canDoubleJump = true;
+        this.touchingGround = false;
+        
+        this.createAnimations();
+        this.setupControls(scene);
+    }
+    
+    createAnimations() {
+        const scene = this.scene;
+        
+        if (!scene.anims.exists('run-right')) {
+            scene.anims.create({
+                key: 'run-right',
+                frames: scene.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
+                frameRate: 10,
+                repeat: -1
+            });
+        }
+        
+        if (!scene.anims.exists('run-left')) {
+            scene.anims.create({
+                key: 'run-left',
+                frames: scene.anims.generateFrameNumbers('player', { start: 4, end: 7 }),
+                frameRate: 10,
+                repeat: -1
+            });
+        }
+        
+        if (!scene.anims.exists('jump')) {
+            scene.anims.create({
+                key: 'jump',
+                frames: [{ key: 'player', frame: 8 }],
+                frameRate: 10
+            });
+        }
+        
+        if (!scene.anims.exists('fall')) {
+            scene.anims.create({
+                key: 'fall',
+                frames: [{ key: 'player', frame: 9 }],
+                frameRate: 10
+            });
+        }
+        
+        if (!scene.anims.exists('idle')) {
+            scene.anims.create({
+                key: 'idle',
+                frames: [{ key: 'player', frame: 0 }],
+                frameRate: 10
+            });
+        }
+    }
+    
+    setupControls(scene) {
+        this.keys = scene.input.keyboard.addKeys({
+            left: Phaser.Input.Keyboard.KeyCodes.A,
+            right: Phaser.Input.Keyboard.KeyCodes.D,
+            jump: Phaser.Input.Keyboard.KeyCodes.W,
+            dash: Phaser.Input.Keyboard.KeyCodes.SHIFT,
+            pause: Phaser.Input.Keyboard.KeyCodes.P
+        });
+        
+        // دعم أسهم لوحة المفاتيح
+        const arrowKeys = scene.input.keyboard.createCursorKeys();
+        this.arrowKeys = arrowKeys;
+        
+        scene.input.keyboard.on('keydown', (event) => {
+            if (event.key === ' ' || event.key === 'ArrowUp' || event.key === 'w' || event.key === 'W') {
+                this.jump();
+                event.preventDefault();
+            }
+        });
+    }
+    
+    update() {
+        // الحركة الأفقية
+        let isMoving = false;
+        
+        if (this.keys.left.isDown || this.arrowKeys.left.isDown) {
+            this.setVelocityX(-this.speed);
+            if (this.touchingGround) {
+                this.play('run-left', true);
+                isMoving = true;
+            }
+            this.setFlipX(true);
+        } else if (this.keys.right.isDown || this.arrowKeys.right.isDown) {
+            this.setVelocityX(this.speed);
+            if (this.touchingGround) {
+                this.play('run-right', true);
+                isMoving = true;
+            }
+            this.setFlipX(false);
+        } else {
+            this.setVelocityX(0);
+            if (this.touchingGround && !isMoving) {
+                this.play('idle', true);
+            }
+        }
+        
+        // حركات القفز والسقوط
+        if (this.velocity.y > 0) {
+            this.play('fall', true);
+        } else if (!this.touchingGround && this.velocity.y < 0) {
+            this.play('jump', true);
+        }
+        
+        // Dash (اندفاعة سريعة)
+        if (this.keys.dash.isDown && this.dashCooldown <= 0) {
+            this.dash();
+            this.dashCooldown = 60; // 1 ثانية في 60 FPS
+        }
+        
+        if (this.dashCooldown > 0) {
+            this.dashCooldown--;
+        }
+    }
+    
+    jump() {
+        if (this.touchingGround) {
+            this.setVelocityY(-this.jumpForce);
+            this.touchingGround = false;
+            this.canDoubleJump = true;
+            this.scene.sound.play('jump');
+        } else if (this.canDoubleJump) {
+            this.setVelocityY(-this.jumpForce * 0.8);
+            this.canDoubleJump = false;
+            this.scene.sound.play('jump');
+        }
+    }
+    
+    dash() {
+        const direction = this.flipX ? -1 : 1;
+        this.setVelocityX(this.speed * 3 * direction);
+        
+        // تأثير بصري للاندفاعة
+        this.setAlpha(0.7);
+        this.scene.time.delayedCall(100, () => {
+            this.setAlpha(1);
+        });
+    }
+    
+    setTouchingGround(value) {
+        this.touchingGround = value;
+    }
+    
+    takeDamage(amount = 10) {
+        this.health -= amount;
+        
+        // تأثير إصابة
+        this.setTint(0xff0000);
+        this.scene.time.delayedCall(200, () => {
+            this.clearTint();
+        });
+        
+        return this.health > 0;
+    }
+    
+    addCoins(amount = 1) {
+        this.coins += amount;
+        localStorage.setItem('coins', this.coins);
+    }
+    
+    changeOutfit(outfitKey) {
+        if (OUTFITS[outfitKey] && OUTFITS[outfitKey].owned) {
+            this.currentOutfit = outfitKey;
+            this.setTexture(outfitKey);
+        }
+    }
+}
