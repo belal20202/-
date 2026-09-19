@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة الشخصية العربية</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #game-container {
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 10px;
+            z-index: 9999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <h2>جاري تحميل اللعبة...</h2>
+        <div style="margin-top: 20px; font-size: 14px;">Loading Game...</div>
+    </div>
+    <div id="game-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <script src="src/config/gameConfig.js"></script>
+    <script src="src/config/levelConfig.js"></script>
+    <script src="src/entities/Player.js"></script>
+    <script src="src/entities/Enemy.js"></script>
+    <script src="src/entities/Collectible.js"></script>
+    <script src="src/scenes/PreloadScene.js"></script>
+    <script src="src/scenes/MenuScene.js"></script>
+    <script src="src/scenes/GameScene.js"></script>
+    <script src="src/scenes/ShopScene.js"></script>
+    <script src="src/scenes/LevelSelectScene.js"></script>
+    <script src="src/scenes/GameOverScene.js"></script>
+    <script src="src/main.js"></script>
+</body>
+</html>
